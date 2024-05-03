@@ -53,7 +53,7 @@ class DrawingApp:
         delete_button.pack(side=tk.LEFT, padx=2, pady=2)
 
     def toggle_select_mode(self):
-        self.select_mode = not self.select_mode
+        self.select_mode = True
         if self.select_mode:
             self.selected_objects = []  # Clear selected objects list
             self.selection_rect = None
@@ -82,11 +82,11 @@ class DrawingApp:
         x, y = event.x, event.y
         items_in_selection = self.canvas.find_overlapping(self.start_x, self.start_y, x, y)
         self.selected_objects = items_in_selection
-        self.canvas.delete(self.selection_rect)
         self.selection_rect = None
         self.canvas.bind("<Button-1>", self.start_drawing)
         self.canvas.bind("<B1-Motion>", self.draw)
         self.canvas.bind("<ButtonRelease-1>", self.finish_drawing)
+        self.select_mode = False
 
     def select_line(self):
         self.selected_objects = []  # Clear selected objects list
@@ -119,6 +119,9 @@ class DrawingApp:
         for obj_id in self.selected_objects:
             self.canvas.delete(obj_id)
         self.selected_objects = []
+        self.canvas.delete(self.selection_rect)
+        
+
 
 if __name__ == "__main__":
     root = tk.Tk()
