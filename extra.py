@@ -13,7 +13,7 @@ class DrawingApp:
         self.start_y = None
         self.selection_rect = None
         self.select_mode = False  # Flag to indicate selection mode
-        self.move_mode = False # Flag to indicate move mode
+        self.move_mode = False  # Flag to indicate move mode
         self.move_offset_x = 0  # Offset for moving objects
         self.move_offset_y = 0
 
@@ -46,6 +46,9 @@ class DrawingApp:
         select_button = tk.Button(toolbar, text="Select", command=self.toggle_select_mode)
         select_button.pack(side=tk.LEFT, padx=2, pady=2)
 
+        move_button = tk.Button(toolbar, text="Move", command=self.toggle_move_mode)
+        move_button.pack(side=tk.LEFT, padx=2, pady=2)
+
         line_button = tk.Button(toolbar, text="Line", command=self.select_line)
         line_button.pack(side=tk.LEFT, padx=2, pady=2)
 
@@ -55,25 +58,9 @@ class DrawingApp:
         delete_button = tk.Button(toolbar, text="Delete", command=self.delete_objects)
         delete_button.pack(side=tk.LEFT, padx=2, pady=2)
 
-        move_button = tk.Button(toolbar, text="Move", command=self.toggle_move_mode)
-        move_button.pack(side=tk.LEFT, padx=2, pady=2)
-
-    def toggle_move_mode(self):
-        self.move_mode = True
-        if self.move_mode:
-            self.canvas.bind("<Button-1>", self.start_move)
-            self.canvas.bind("<B1-Motion>", self.move_objects)
-            self.canvas.bind("<ButtonRelease-1>", self.end_move)
-        else:
-            self.canvas.unbind("<Button-1>")
-            self.canvas.unbind("<B1-Motion>")
-            self.canvas.unbind("<ButtonRelease-1>")
-            if self.selection_rect:
-                self.canvas.delete(self.selection_rect)
-            self.selection_rect = None
-
     def toggle_select_mode(self):
         self.select_mode = True
+        self.move_mode = False  # Disable move mode
         if self.select_mode:
             self.selected_objects = []  # Clear selected objects list
             self.selection_rect = None
@@ -87,6 +74,18 @@ class DrawingApp:
             if self.selection_rect:
                 self.canvas.delete(self.selection_rect)
             self.selection_rect = None
+
+    def toggle_move_mode(self):
+        self.move_mode = True
+        self.select_mode = False  # Disable selection mode
+        if self.move_mode:
+            self.canvas.bind("<Button-1>", self.start_move)
+            self.canvas.bind("<B1-Motion>", self.move_objects)
+            self.canvas.bind("<ButtonRelease-1>", self.end_move)
+        else:
+            self.canvas.unbind("<Button-1>")
+            self.canvas.unbind("<B1-Motion>")
+            self.canvas.unbind("<ButtonRelease-1>")
 
     def start_selection(self, event):
         self.start_x = event.x
@@ -102,10 +101,9 @@ class DrawingApp:
         x, y = event.x, event.y
         items_in_selection = self.canvas.find_overlapping(self.start_x, self.start_y, x, y)
         self.selected_objects = items_in_selection
-        self.canvas.bind("<Button-1>", self.start_drawing)
-        self.canvas.bind("<B1-Motion>", self.draw)
-        self.canvas.bind("<ButtonRelease-1>", self.finish_drawing)
+        self.selection_rect = None
         self.select_mode = False
+        self.toggle_move_mode()  # Automatically switch to move mode
 
     def start_move(self, event):
         if self.selected_objects:
@@ -125,19 +123,8 @@ class DrawingApp:
                 self.move_offset_y = dy
 
     def end_move(self, event):
-        if self.selection_rect:
-            print("i")
-            self.canvas.delete(self.selection_rect)
-            self.selection_rect = None
         self.move_offset_x = 0
         self.move_offset_y = 0
-        self.selected_objects = []
-        self.canvas.bind("<Button-1>", self.start_drawing)
-        self.canvas.bind("<B1-Motion>", self.draw)
-        self.canvas.bind("<ButtonRelease-1>", self.finish_drawing)
-        self.move_mode = False
-
-
 
     def select_line(self):
         self.selected_objects = []  # Clear selected objects list
@@ -148,7 +135,7 @@ class DrawingApp:
         self.selected_objects.append("rectangle")
 
     def start_drawing(self, event):
-        if not self.select_mode:
+        if not self.select_mode and not self.move_mode:
             self.start_x = event.x
             self.start_y = event.y
 
@@ -161,17 +148,17 @@ class DrawingApp:
             self.canvas.create_rectangle(self.start_x, self.start_y, event.x, event.y, outline="black", tags="temp_rectangle")
 
     def finish_drawing(self, event):
-        if "line" in self.selected_objects:
-            self.canvas.create_line(self.start_x, self.start_y, event.x, event.y)
-        elif "rectangle" in self.selected_objects:
-            self.canvas.create_rectangle(self.start_x, self.start_y, event.x, event.y, outline="black")
+        if not self.select_mode and not self.move_mode:
+            if "line" in self.selected_objects:
+                self.canvas.create_line(self.start_x, self.start_y, event.x, event.y)
+            elif "rectangle" in self.selected_objects:
+                self.canvas.create_rectangle(self.start_x, self.start_y, event.x, event.y, outline="black")
 
     def delete_objects(self):
         for obj_id in self.selected_objects:
             self.canvas.delete(obj_id)
         self.selected_objects = []
         self.canvas.delete(self.selection_rect)
-        
 
 
 if __name__ == "__main__":
