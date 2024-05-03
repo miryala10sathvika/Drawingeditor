@@ -37,7 +37,10 @@ class DrawingApp:
 
         edit_menu = tk.Menu(menubar, tearoff=0)
         edit_menu.add_command(label="Delete", command=self.delete_objects)
-        menubar.add_cascade(label="Edit", menu=edit_menu)
+        edit_menu.add_command(label="Move", command=self.toggle_move_mode)
+        edit_menu.add_command(label="Copy", command=self.copy_objects)
+        edit_menu.add_command(label="Paste", command=self.paste_objects)
+        menubar.add_cascade(label="Operations", menu=edit_menu)
 
     def create_toolbar(self):
         toolbar = tk.Frame(self.master, relief=tk.RAISED, bd=2)
@@ -57,6 +60,13 @@ class DrawingApp:
 
         move_button = tk.Button(toolbar, text="Move", command=self.toggle_move_mode)
         move_button.pack(side=tk.LEFT, padx=2, pady=2)
+
+        copy_button = tk.Button(toolbar, text="Copy", command=self.copy_objects)
+        copy_button.pack(side=tk.LEFT, padx=2, pady=2)
+
+        paste_button = tk.Button(toolbar, text="Paste", command=self.paste_objects)
+        paste_button.pack(side=tk.LEFT, padx=2, pady=2)
+
 
     def toggle_move_mode(self):
         self.move_mode = True
@@ -171,8 +181,44 @@ class DrawingApp:
             self.canvas.delete(obj_id)
         self.selected_objects = []
         self.canvas.delete(self.selection_rect)
-        
 
+    def copy_objects(self):
+        self.copied_objects = list(self.selected_objects)
+        if self.selection_rect:
+            print("i")
+            self.canvas.delete(self.selection_rect)
+            self.selection_rect = None
+
+    def paste_objects(self):
+        if self.copied_objects:
+            x_offset, y_offset = 0, 0  # Offset for pasting copied objects
+            for obj_id in self.copied_objects:
+                bbox = self.canvas.bbox(obj_id)
+                x1, y1, x2, y2 = bbox
+                dx = x1 - x_offset
+                dy = y1 - y_offset
+                new_obj_id = None
+                if self.canvas.type(obj_id) == "line":
+                    new_obj_id = self.canvas.create_line(x1 - dx, y1 - dy, x2 - dx, y2 - dy)
+                elif self.canvas.type(obj_id) == "rectangle":
+                    new_obj_id = self.canvas.create_rectangle(x1 - dx, y1 - dy, x2 - dx, y2 - dy, outline="black")
+
+    def paste_objects(self):
+        if self.copied_objects:
+            # Calculate offset based on mouse position
+            mouse_x = self.canvas.winfo_pointerx() - self.canvas.winfo_rootx()
+            mouse_y = self.canvas.winfo_pointery() - self.canvas.winfo_rooty()
+            dx = mouse_x - self.start_x
+            dy = mouse_y - self.start_y
+            for obj_id in self.copied_objects:
+                # Get original coordinates of copied object
+                x1, y1, x2, y2 = self.canvas.coords(obj_id)
+                # Create copy at new position
+                new_obj_id = None
+                if self.canvas.type(obj_id) == "line":
+                    new_obj_id = self.canvas.create_line(x1 + dx, y1 + dy, x2 + dx, y2 + dy)
+                elif self.canvas.type(obj_id) == "rectangle":
+                    new_obj_id = self.canvas.create_rectangle(x1 + dx, y1 + dy, x2 + dx, y2 + dy, outline="black")
 
 if __name__ == "__main__":
     root = tk.Tk()
