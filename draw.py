@@ -1,7 +1,35 @@
 import tkinter as tk
 import tkinter.simpledialog as sd
+import tkinter.messagebox as messagebox
+
+from tkinter import *
 
 class DrawingApp:
+    @staticmethod
+    def round_rectangle(self,x1, y1, x2, y2, radius=25, **kwargs):
+            
+        points = [x1+radius, y1,
+                x1+radius, y1,
+                x2-radius, y1,
+                x2-radius, y1,
+                x2, y1,
+                x2, y1+radius,
+                x2, y1+radius,
+                x2, y2-radius,
+                x2, y2-radius,
+                x2, y2,
+                x2-radius, y2,
+                x2-radius, y2,
+                x1+radius, y2,
+                x1+radius, y2,
+                x1, y2,
+                x1, y2-radius,
+                x1, y2-radius,
+                x1, y1+radius,
+                x1, y1+radius,
+                x1, y1]
+
+        return self.canvas.create_polygon(points, **kwargs, smooth=True)
     def __init__(self, master):
         self.master = master
         self.master.title("Drawing Application")
@@ -43,6 +71,7 @@ class DrawingApp:
         edit_menu.add_command(label="Move", command=self.toggle_move_mode)
         edit_menu.add_command(label="Copy", command=self.copy_objects)
         edit_menu.add_command(label="Paste", command=self.paste_objects)
+        edit_menu.add_command(label="Edit Properties", command=self.edit_object_properties)
         menubar.add_cascade(label="Operations", menu=edit_menu)
         
         saveExport_menu = tk.Menu(menubar, tearoff=0)
@@ -75,6 +104,9 @@ class DrawingApp:
 
         paste_button = tk.Button(toolbar, text="Paste", command=self.paste_objects)
         paste_button.pack(side=tk.LEFT, padx=2, pady=2)
+
+        edit_button = tk.Button(toolbar, text="Edit", command=self.edit_object_properties)
+        edit_button.pack(side=tk.LEFT, padx=2, pady=2)
 
 
     def toggle_move_mode(self):
@@ -159,8 +191,6 @@ class DrawingApp:
         self.canvas.bind("<B1-Motion>", self.draw)
         self.canvas.bind("<ButtonRelease-1>", self.finish_drawing)
         self.move_mode = False
-
-
 
     def select_line(self):
         if self.selection_rect:
@@ -319,6 +349,32 @@ class DrawingApp:
 
             print(f"Data written to '{file_path}' successfully.")
     
+
+    def edit_object_properties(self):
+        if self.selected_objects:
+            for obj_id in self.selected_objects:
+                obj_type = self.canvas.type(obj_id)
+                if obj_type == "line":
+                    new_color = sd.askstring("Change Color", "Enter Line color (black, red, green, or blue):", initialvalue="black")
+                    if new_color in ["black", "red", "green", "blue"]:
+                        self.canvas.itemconfig(obj_id, fill=new_color)
+                elif obj_type == "rectangle":
+                    new_color = sd.askstring("Change Color", "Enter Rectangle color (black, red, green, or blue):", initialvalue="black")
+                    if new_color in ["black", "red", "green", "blue"]:
+                        self.canvas.itemconfig(obj_id, outline=new_color)
+
+                    rounded_edges = sd.askstring("Rounded Edges", "Do you want rounded edges? (yes or no):", initialvalue="no")
+                    if rounded_edges.lower() == "yes":
+                        coords = self.canvas.coords(obj_id)
+                        new_rectangle = self.round_rectangle(self,coords[0], coords[1], coords[2], coords[3], radius=25, outline=new_color, fill="")
+                        self.canvas.delete(obj_id)
+                        self.selected_objects.remove(obj_id)  # Remove the old object ID
+                        self.selected_objects.append(new_rectangle)  # Add the new object ID
+                
+            self.canvas.delete(self.selection_rect)
+        else:
+            messagebox.showinfo("No Object Selected", "Please select an object to edit.")
+
 if __name__ == "__main__":
     root = tk.Tk()
     app = DrawingApp(root)
