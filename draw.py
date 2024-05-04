@@ -3,6 +3,7 @@ import tkinter.simpledialog as sd
 import tkinter.messagebox as messagebox
 
 from tkinter import *
+import sys
 
 class DrawingApp:
     @staticmethod
@@ -36,6 +37,9 @@ class DrawingApp:
 
         self.canvas = tk.Canvas(self.master, width=800, height=800, bg="white")
         self.canvas.pack()
+        
+        if file_name:
+            self.load_file(file_name)
 
         self.selected_objects = []  # List to store IDs of selected objects
         self.start_x = None
@@ -289,9 +293,8 @@ class DrawingApp:
 
             print(f"Data written to '{file_path}' successfully.")
             
-    def load_file(self):
+    def load_file(self,file_name=None):
         # Define the file path where you want to store the data
-        file_name = sd.askstring("Enter File Name", "Enter the file name (with extension) (must be .txt):")
         if file_name:
             if file_name.endswith(".txt"):
                 file_path = file_name
@@ -305,6 +308,10 @@ class DrawingApp:
                             self.canvas.create_rectangle(data[1], data[2], data[3], data[4])
 
                 print(f"Data loaded from '{file_path}' successfully.")
+        else:
+            file_name = sd.askstring("Enter File Name", "Enter the file name (with extension) (must be .txt):")
+            if file_name and file_name.endswith(".txt"):
+                self.load_file(file_name)
             
     def xmlExport(self):
         # Define the file path where you want to store the data
@@ -376,6 +383,9 @@ class DrawingApp:
             messagebox.showinfo("No Object Selected", "Please select an object to edit.")
 
 if __name__ == "__main__":
+    file_name = None
+    if len(sys.argv) > 1:
+        file_name = sys.argv[1]
     root = tk.Tk()
     app = DrawingApp(root)
     root.mainloop()
