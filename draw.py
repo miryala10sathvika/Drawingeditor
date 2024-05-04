@@ -202,20 +202,6 @@ class DrawingApp:
 
     def paste_objects(self):
         if self.copied_objects:
-            x_offset, y_offset = 0, 0  # Offset for pasting copied objects
-            for obj_id in self.copied_objects:
-                bbox = self.canvas.bbox(obj_id)
-                x1, y1, x2, y2 = bbox
-                dx = x1 - x_offset
-                dy = y1 - y_offset
-                new_obj_id = None
-                if self.canvas.type(obj_id) == "line":
-                    new_obj_id = self.canvas.create_line(x1 - dx, y1 - dy, x2 - dx, y2 - dy)
-                elif self.canvas.type(obj_id) == "rectangle":
-                    new_obj_id = self.canvas.create_rectangle(x1 - dx, y1 - dy, x2 - dx, y2 - dy, outline="black")
-
-    def paste_objects(self):
-        if self.copied_objects:
             # Calculate offset based on mouse position
             mouse_x = self.canvas.winfo_pointerx() - self.canvas.winfo_rootx()
             mouse_y = self.canvas.winfo_pointery() - self.canvas.winfo_rooty()
