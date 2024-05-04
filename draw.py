@@ -1,4 +1,5 @@
 import tkinter as tk
+import tkinter.simpledialog as sd
 
 class DrawingApp:
     def __init__(self, master):
@@ -32,6 +33,8 @@ class DrawingApp:
         object_menu.add_command(label="Line", command=self.select_line)
         object_menu.add_command(label="Rectangle", command=self.select_rectangle)
         object_menu.add_separator()
+        object_menu.add_command(label="Print Object Coordinates", command=self.print_object_coordinates)  # New menu item
+        object_menu.add_separator()
         object_menu.add_command(label="Exit", command=self.master.quit)
         menubar.add_cascade(label="Objects", menu=object_menu)
 
@@ -41,6 +44,12 @@ class DrawingApp:
         edit_menu.add_command(label="Copy", command=self.copy_objects)
         edit_menu.add_command(label="Paste", command=self.paste_objects)
         menubar.add_cascade(label="Operations", menu=edit_menu)
+        
+        saveExport_menu = tk.Menu(menubar, tearoff=0)
+        saveExport_menu.add_command(label="Save", command=self.save_file)
+        saveExport_menu.add_command(label="Load file", command=self.load_file)
+        saveExport_menu.add_command(label="Export", command=self.xmlExport)
+        menubar.add_cascade(label="Operations", menu=saveExport_menu)
 
     def create_toolbar(self):
         toolbar = tk.Frame(self.master, relief=tk.RAISED, bd=2)
@@ -185,7 +194,17 @@ class DrawingApp:
             self.canvas.create_line(self.start_x, self.start_y, event.x, event.y)
         elif "rectangle" in self.selected_objects:
             self.canvas.create_rectangle(self.start_x, self.start_y, event.x, event.y, outline="black")
-        print("hai\n")
+
+        # add code here to remove the duplicates present in the list 
+        obj_list = self.canvas.find_all()
+        # first check if in select mode
+        if self.selection_rect:
+            obj_list = obj_list[:-1]
+        for obj_id in obj_list:
+            if (int(obj_id) + 1 in obj_list and
+                self.canvas.coords(obj_id) == self.canvas.coords(int(obj_id) + 1) and
+                self.canvas.type(obj_id) == self.canvas.type(int(obj_id) + 1)):
+                self.canvas.delete(obj_id)
 
     def delete_objects(self):
         for obj_id in self.selected_objects:
@@ -217,6 +236,89 @@ class DrawingApp:
                 elif self.canvas.type(obj_id) == "rectangle":
                     new_obj_id = self.canvas.create_rectangle(x1 + dx, y1 + dy, x2 + dx, y2 + dy, outline="black")
 
+    def print_object_coordinates(self):
+        print("Object Details:")
+        for obj_id in self.canvas.find_all():
+            obj_type = self.canvas.type(obj_id)  # Get the type of the object
+            coordinates = self.canvas.coords(obj_id)
+            print(f"Object ID: {obj_id}, Type: {obj_type}, Coordinates: {coordinates}")
+    
+    def save_file(self):
+        # Define the file path where you want to store the data
+        file_name = sd.askstring("Enter File Name", "Enter the file name (without extension):")
+        if file_name:
+            file_path = f"{file_name}.txt"
+            with open(file_path, 'w') as file:
+                for obj_id in self.canvas.find_all():
+                    obj_type = self.canvas.type(obj_id)
+                    coordinates = self.canvas.coords(obj_id)
+                    if obj_type == 'rectangle':
+                        obj_type = 'rect'
+                    coordinates_str = ' '.join(map(str, coordinates))
+                    file.write(f"{obj_type} {coordinates_str}\n")
+
+            print(f"Data written to '{file_path}' successfully.")
+            
+    def load_file(self):
+        # Define the file path where you want to store the data
+        file_name = sd.askstring("Enter File Name", "Enter the file name (with extension) (must be .txt):")
+        if file_name:
+            if file_name.endswith(".txt"):
+                file_path = file_name
+                self.canvas.delete("all")
+                with open(file_path, 'r') as file:
+                    for line in file:
+                        data = line.split(" ")
+                        if data[0] == 'line':
+                            self.canvas.create_line(data[1], data[2], data[3], data[4])
+                        elif data[0] == 'rect':
+                            self.canvas.create_rectangle(data[1], data[2], data[3], data[4])
+
+                print(f"Data loaded from '{file_path}' successfully.")
+            
+    def xmlExport(self):
+        # Define the file path where you want to store the data
+        file_name = sd.askstring("Enter File Name", "Enter the file name (without extension):")
+        if file_name:
+            file_path = f"{file_name}.xml"
+            num_indents = 0
+            indents = ''
+            with open(file_path, 'w') as file:
+                for obj_id in self.canvas.find_all():
+                    obj_type = self.canvas.type(obj_id)
+                    coordinates = self.canvas.coords(obj_id)
+                    if obj_type == 'line':
+                        for _ in range(num_indents):
+                            indents += '\t'
+                        file.write(indents + "<line>\n")
+                        file.write(indents + "\t<begin>\n")
+                        file.write(indents + f"\t\t<x>{coordinates[0]}</x>\n")
+                        file.write(indents + f"\t\t<y>{coordinates[1]}</y>\n")
+                        file.write(indents + "\t</begin>\n")
+                        file.write(indents + "\t<end>\n")
+                        file.write(indents + f"\t\t<x>{coordinates[2]}</x>\n")
+                        file.write(indents + f"\t\t<y>{coordinates[3]}</y>\n")
+                        file.write(indents + "\t</end>\n")
+                        file.write(indents + "</line>\n")
+                        indents = ''
+                        
+                    elif obj_type == 'rectangle':
+                        for _ in range(num_indents):
+                            indents += '\t'
+                        file.write(indents + "<rectangle>\n")
+                        file.write(indents + "\t<upper-left>\n")
+                        file.write(indents + f"\t\t<x>{coordinates[0]}</x>\n")
+                        file.write(indents + f"\t\t<y>{coordinates[1]}</y>\n")
+                        file.write(indents + "\t</upper-left>\n")
+                        file.write(indents + "\t<lower-right>\n")
+                        file.write(indents + f"\t\t<x>{coordinates[2]}</x>\n")
+                        file.write(indents + f"\t\t<y>{coordinates[3]}</y>\n")
+                        file.write(indents + "\t</lower-right>\n")
+                        file.write(indents + "</rectangle>\n")
+                        indents = ''
+
+            print(f"Data written to '{file_path}' successfully.")
+    
 if __name__ == "__main__":
     root = tk.Tk()
     app = DrawingApp(root)
