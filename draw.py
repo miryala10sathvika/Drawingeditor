@@ -360,6 +360,8 @@ class DrawingApp:
     def edit_object_properties(self):
         if self.selected_objects:
             for obj_id in self.selected_objects:
+                if obj_id == self.selection_rect:
+                    continue
                 obj_type = self.canvas.type(obj_id)
                 if obj_type == "line":
                     new_color = sd.askstring("Change Color", "Enter Line color (black, red, green, or blue):", initialvalue="black")
@@ -376,9 +378,10 @@ class DrawingApp:
                         new_rectangle = self.round_rectangle(self,coords[0], coords[1], coords[2], coords[3], radius=25, outline=new_color, fill="")
                         self.canvas.delete(obj_id)
                         self.selected_objects.remove(obj_id)  # Remove the old object ID
-                        self.selected_objects.append(new_rectangle)  # Add the new object ID
+                        #self.selected_objects.append(new_rectangle)  # Add the new object ID
                 
             self.canvas.delete(self.selection_rect)
+            self.selection_rect = None
         else:
             messagebox.showinfo("No Object Selected", "Please select an object to edit.")
 
