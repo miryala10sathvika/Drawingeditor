@@ -84,6 +84,9 @@ class DrawingApp:
 
     def toggle_select_mode(self):
         self.select_mode = True
+        if self.selection_rect:
+            self.canvas.delete(self.selection_rect)
+            self.selection_rect = None
         if self.select_mode:
             self.selected_objects = []  # Clear selected objects list
             self.selection_rect = None
@@ -96,7 +99,9 @@ class DrawingApp:
             self.canvas.unbind("<ButtonRelease-1>")
             if self.selection_rect:
                 self.canvas.delete(self.selection_rect)
-            self.selection_rect = None
+                self.selection_rect = None
+        print(self.selected_objects)
+                
 
     def start_selection(self, event):
         self.start_x = event.x
@@ -111,7 +116,7 @@ class DrawingApp:
     def end_selection(self, event):
         x, y = event.x, event.y
         items_in_selection = self.canvas.find_overlapping(self.start_x, self.start_y, x, y)
-        self.selected_objects = items_in_selection
+        self.selected_objects = list(items_in_selection)
         self.canvas.bind("<Button-1>", self.start_drawing)
         self.canvas.bind("<B1-Motion>", self.draw)
         self.canvas.bind("<ButtonRelease-1>", self.finish_drawing)
@@ -136,7 +141,6 @@ class DrawingApp:
 
     def end_move(self, event):
         if self.selection_rect:
-            print("i")
             self.canvas.delete(self.selection_rect)
             self.selection_rect = None
         self.move_offset_x = 0
@@ -150,10 +154,16 @@ class DrawingApp:
 
 
     def select_line(self):
+        if self.selection_rect:
+            self.canvas.delete(self.selection_rect)
+            self.selection_rect = None
         self.selected_objects = []  # Clear selected objects list
         self.selected_objects.append("line")
 
     def select_rectangle(self):
+        if self.selection_rect:
+            self.canvas.delete(self.selection_rect)
+            self.selection_rect = None
         self.selected_objects = []  # Clear selected objects list
         self.selected_objects.append("rectangle")
 
@@ -175,6 +185,7 @@ class DrawingApp:
             self.canvas.create_line(self.start_x, self.start_y, event.x, event.y)
         elif "rectangle" in self.selected_objects:
             self.canvas.create_rectangle(self.start_x, self.start_y, event.x, event.y, outline="black")
+        print("hai\n")
 
     def delete_objects(self):
         for obj_id in self.selected_objects:
