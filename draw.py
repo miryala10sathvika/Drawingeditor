@@ -40,7 +40,7 @@ class DrawingApp:
         
         if file_name:
             self.load_file(file_name)
-
+        self.groups = []  # List to store coordinates of grouped rectang
         self.selected_objects = []  # List to store IDs of selected objects
         self.start_x = None
         self.start_y = None
@@ -49,10 +49,10 @@ class DrawingApp:
         self.move_mode = False # Flag to indicate move mode
         self.move_offset_x = 0  # Offset for moving objects
         self.move_offset_y = 0
-
+        self.toggle_view=0
         self.create_menu()
         self.create_toolbar()
-
+        self.objlist=[]
         self.canvas.bind("<Button-1>", self.start_drawing)
         self.canvas.bind("<B1-Motion>", self.draw)
         self.canvas.bind("<ButtonRelease-1>", self.finish_drawing)
@@ -112,6 +112,75 @@ class DrawingApp:
         edit_button = tk.Button(toolbar, text="Edit", command=self.edit_object_properties)
         edit_button.pack(side=tk.LEFT, padx=2, pady=2)
 
+        group_button = tk.Button(toolbar, text="Group", command=self.group_objects)
+        group_button.pack(side=tk.LEFT, padx=2, pady=2)
+
+        # group_button = tk.Button(toolbar, text="View Group", command=self.group_view_objects)
+        # group_button.pack(side=tk.LEFT, padx=2, pady=2)
+
+        ungroup_button = tk.Button(toolbar, text="UngroupAll", command=self.ungroupall_objects)
+        ungroup_button.pack(side=tk.LEFT, padx=2, pady=2)
+
+        ungroup_button = tk.Button(toolbar, text="Ungroup", command=self.ungroup_objects)
+        ungroup_button.pack(side=tk.LEFT, padx=2, pady=2)
+
+    def ungroupall_objects(self):
+        if self.selected_objects:
+            if self.selection_rect != None:
+                coords = self.canvas.coords(self.selection_rect)
+                # Find the group(s) inside the selection box
+                groups_to_remove = []
+                for i, group_coords in enumerate(self.groups):
+                    if (group_coords[0] >= coords[0] and group_coords[1] >= coords[1] and
+                        group_coords[2] <= coords[2] and group_coords[3] <= coords[3]):
+                        groups_to_remove.append(i)
+
+                # Remove the identified group(s) from self.groups
+                for index in sorted(groups_to_remove, reverse=True):
+                    del self.groups[index]
+        if self.selection_rect:
+            self.canvas.delete(self.selection_rect)
+            self.selection_rect = None
+            for obj_id in self.objlist:
+                    self.canvas.delete(obj_id)
+    def ungroup_objects(self):
+        if self.selected_objects:
+            if self.selection_rect:
+                coords = self.canvas.coords(self.selection_rect)
+                # Find the group(s) inside the selection box
+                groups_to_remove = []
+                for u, group_coords in enumerate(self.groups):
+                    if (group_coords[0] >= coords[0] and group_coords[1] >= coords[1] and
+                        group_coords[2] <= coords[2] and group_coords[3] <= coords[3]):
+                        groups_to_remove.append(u)
+                        print("ki",u)
+                # Iterate through all possible non-intersecting super groups
+                for i in range(len(groups_to_remove)):
+                    for j in range(len(groups_to_remove)):
+                        if i!=j and groups_to_remove[i]!=-9999 and groups_to_remove[j]!=-9999:
+                            group1 = groups_to_remove[i]
+                            group2 = groups_to_remove[j]
+                            print(group1,group2)
+                            # Check if group2 is fully contained within group1
+                            if (self.groups[group1][0] <= self.groups[group2][0] and self.groups[group1][1] <= self.groups[group2][1] and
+                                self.groups[group1][2] >= self.groups[group2][2] and self.groups[group1][3] >= self.groups[group2][3]):
+                                groups_to_remove[j]=-9999
+                            # Check if group1 is fully contained within group2
+                            elif (self.groups[group1][0] >= self.groups[group2][0] and self.groups[group1][1] >= self.groups[group2][1] and
+                                self.groups[group1][2] <= self.groups[group2][2] and self.groups[group1][3] <= self.groups[group2][3]):
+                                groups_to_remove[i]=-9999
+                print(groups_to_remove,self.groups)
+                # Remove the identified group(s) from self.groups
+                for index in sorted(groups_to_remove, reverse=True):
+                    if index!=-9999:
+                        # print("i\n",groups_to_remove[index])
+                        del self.groups[index]
+        if self.selection_rect:
+            self.canvas.delete(self.selection_rect)
+            self.selection_rect = None
+            for obj_id in self.objlist:
+                    self.canvas.delete(obj_id)
+
 
     def toggle_move_mode(self):
         self.move_mode = True
@@ -132,6 +201,9 @@ class DrawingApp:
         if self.selection_rect:
             self.canvas.delete(self.selection_rect)
             self.selection_rect = None
+            for obj_id in self.objlist:
+                    self.canvas.delete(obj_id)
+                    print(f"hai: {obj_id}")
         if self.select_mode:
             self.selected_objects = []  # Clear selected objects list
             self.selection_rect = None
@@ -153,10 +225,33 @@ class DrawingApp:
         self.start_y = event.y
 
     def draw_selection_rectangle(self, event):
+        self.objlist=[]
         x, y = event.x, event.y
         if self.selection_rect:
             self.canvas.delete(self.selection_rect)
+            for obj_id in self.objlist:
+                self.canvas.delete(obj_id)
+                print(f"hai: {obj_id}")
         self.selection_rect = self.canvas.create_rectangle(self.start_x, self.start_y, x, y, outline="blue", dash=(4, 4))
+        # Check if any group is present within the selection rectangle
+        for i,group_coords in enumerate(self.groups):
+            self.canvas.delete(str(i)+"view_rectangle")
+            if (group_coords[0] >= self.start_x and group_coords[1] >= self.start_y and
+                group_coords[2] <= x and group_coords[3] <= y):
+                # Draw a pink dashed rectangle around the group
+                obj=self.canvas.create_rectangle(group_coords[0], group_coords[1], group_coords[2], group_coords[3], outline="pink", dash=(4, 4),tags=str(i)+"view_rectangle")
+                self.objlist.append(obj)
+            elif (group_coords[0] >= x and group_coords[1] >= y and
+                group_coords[2] <= self.start_x and group_coords[3] <= self.start_y):
+                # Draw a pink dashed rectangle around the group
+                obj=self.canvas.create_rectangle(group_coords[0], group_coords[1], group_coords[2], group_coords[3], outline="pink", dash=(4, 4),tags=str(i)+"view_rectangle")
+                self.objlist.append(obj)
+
+
+    # def group_view_objects(self):
+    #     for group_coords in self.groups:
+    #         obj=self.canvas.create_rectangle(group_coords[0], group_coords[1], group_coords[2], group_coords[3], outline="pink", dash=(4, 4))
+
 
     def end_selection(self, event):
         x, y = event.x, event.y
@@ -166,6 +261,7 @@ class DrawingApp:
         self.canvas.bind("<B1-Motion>", self.draw)
         self.canvas.bind("<ButtonRelease-1>", self.finish_drawing)
         self.select_mode = False
+        
 
     def start_move(self, event):
         if self.selected_objects:
@@ -270,12 +366,22 @@ class DrawingApp:
                 elif self.canvas.type(obj_id) == "rectangle":
                     new_obj_id = self.canvas.create_rectangle(x1 + dx, y1 + dy, x2 + dx, y2 + dy, outline="black")
 
+    def group_objects(self):
+        if self.selected_objects:
+            if self.selection_rect !=None:
+                coords = self.canvas.coords(self.selection_rect)
+                self.groups.append(list(coords))
+        self.canvas.delete(self.selection_rect)
+
     def print_object_coordinates(self):
         print("Object Details:")
         for obj_id in self.canvas.find_all():
             obj_type = self.canvas.type(obj_id)  # Get the type of the object
             coordinates = self.canvas.coords(obj_id)
             print(f"Object ID: {obj_id}, Type: {obj_type}, Coordinates: {coordinates}")
+        for obj_id in self.objlist:
+                self.canvas.delete(obj_id)
+                print(f"hai: {obj_id}")
     
     def save_file(self):
         # Define the file path where you want to store the data
