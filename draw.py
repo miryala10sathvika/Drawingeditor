@@ -18,7 +18,7 @@ class DrawingApp:
                 x2, y1+radius,
                 x2, y2-radius,
                 x2, y2-radius,
-                x2, y2,
+                x2, y2, # pos 19, 20     
                 x2-radius, y2,
                 x2-radius, y2,
                 x1+radius, y2,
@@ -41,6 +41,7 @@ class DrawingApp:
         if file_name:
             self.load_file(file_name)
         self.groups = []  # List to store coordinates of grouped rectang
+        self.rectangle_type = {}
         self.selected_objects = []  # List to store IDs of selected objects
         self.start_x = None
         self.start_y = None
@@ -342,12 +343,15 @@ class DrawingApp:
         elif "rectangle" in self.selected_objects:
             self.canvas.delete("temp_rectangle")
             self.canvas.create_rectangle(self.start_x, self.start_y, event.x, event.y, outline="black", tags="temp_rectangle")
+            
 
     def finish_drawing(self, event):
         if "line" in self.selected_objects:
             self.canvas.create_line(self.start_x, self.start_y, event.x, event.y)
         elif "rectangle" in self.selected_objects:
             self.canvas.create_rectangle(self.start_x, self.start_y, event.x, event.y, outline="black")
+            self.rectangle_type[str(self.canvas.find_all()[-1])] = "square"
+            print(self.rectangle_type)
 
         # add code here to remove the duplicates present in the list 
         obj_list = self.canvas.find_all()
@@ -430,16 +434,59 @@ class DrawingApp:
     def save_file(self):
         # Define the file path where you want to store the data
         file_name = sd.askstring("Enter File Name", "Enter the file name (without extension):")
+        added_objs = []
         if file_name:
             file_path = f"{file_name}.txt"
             with open(file_path, 'w') as file:
+                for group_coords in self.groups:
+                    items_in_group = self.canvas.find_overlapping(group_coords[0], group_coords[1], group_coords[2], group_coords[3]) 
+                    if len(items_in_group) < 2:
+                       continue
+                    file.write("begin\n")
+                    for item_group in items_in_group:
+                        added_objs.append(item_group)
+                        obj_type = self.canvas.type(obj_id)
+                        coordinates = self.canvas.coords(obj_id)
+                        coordinates_str = ' '.join(map(str, coordinates))
+                        if obj_type == 'rectangle':
+                            obj_type = 'rect'
+                            round = self.rectangle_type.get(str(obj_id))
+                            color = self.canvas.itemcget(obj_id, "outline")
+                            file.write(f"{obj_type} {coordinates_str} {color} {round}\n")
+                        elif obj_type == 'polygon':
+                            coordinates = self.canvas.coords(obj_id)
+                            coords = [coordinates[19], coordinates[20], coordinates[-2], coordinates[-1]]
+                            coordinates_str = ' '.join(map(str, coords))
+                            obj_type = 'rect'
+                            round = self.rectangle_type.get(str(obj_id))
+                            color = self.canvas.itemcget(obj_id, "outline")
+                            file.write(f"{obj_type} {coordinates_str} {color} {round}\n")
+                        elif obj_type == 'line':
+                            color = self.canvas.itemcget(obj_id, "fill")
+                            file.write(f"{obj_type} {coordinates_str} {color}\n")
+                    file.write("end\n")
+                        
                 for obj_id in self.canvas.find_all():
                     obj_type = self.canvas.type(obj_id)
                     coordinates = self.canvas.coords(obj_id)
+                    coordinates_str = ' '.join(map(str, coordinates))
                     if obj_type == 'rectangle':
                         obj_type = 'rect'
-                    coordinates_str = ' '.join(map(str, coordinates))
-                    file.write(f"{obj_type} {coordinates_str}\n")
+                        round = self.rectangle_type.get(str(obj_id))
+                        color = self.canvas.itemcget(obj_id, "outline")
+                        file.write(f"{obj_type} {coordinates_str} {color} {round}\n")
+                    elif obj_type == 'polygon':
+                        coordinates = self.canvas.coords(obj_id)
+                        coords = [coordinates[19], coordinates[20], coordinates[-2], coordinates[-1]]
+                        coordinates_str = ' '.join(map(str, coords))
+                        obj_type = 'rect'
+                        round = self.rectangle_type.get(str(obj_id))
+                        color = self.canvas.itemcget(obj_id, "outline")
+                        file.write(f"{obj_type} {coordinates_str} {color} {round}\n")
+                    elif obj_type == 'line':
+                        color = self.canvas.itemcget(obj_id, "fill")
+                        file.write(f"{obj_type} {coordinates_str} {color}\n")
+            
 
             print(f"Data written to '{file_path}' successfully.")
             
@@ -525,9 +572,13 @@ class DrawingApp:
                     rounded_edges = sd.askstring("Rounded Edges", "Do you want rounded edges? (yes or no):", initialvalue="no")
                     if rounded_edges.lower() == "yes":
                         coords = self.canvas.coords(obj_id)
-                        new_rectangle = self.round_rectangle(self,coords[0], coords[1], coords[2], coords[3], radius=25, outline=new_color, fill="")
                         self.canvas.delete(obj_id)
                         self.selected_objects.remove(obj_id)  # Remove the old object ID
+                        self.rectangle_type.pop(f'{obj_id}')
+                        print(self.rectangle_type)
+                        new_rectangle = self.round_rectangle(self,coords[0], coords[1], coords[2], coords[3], radius=25, outline=new_color, fill="")
+                        self.rectangle_type[str(self.canvas.find_all()[-1])] = "rounded"
+                        print(self.rectangle_type)
                         #self.selected_objects.append(new_rectangle)  # Add the new object ID
                 
             self.canvas.delete(self.selection_rect)
