@@ -35,3 +35,8 @@ This is a basic drawing application built using Python's tkinter library. The ap
 - To Save: Use the 'Save' option under the File menu to save your canvas.
 - To Load: Use the 'Load file' option under the File menu to load a previously saved canvas.
 - To Export: Use the 'Export' option under the File menu to generate an XML file of your canvas.
+
+## Assumptions
+
+- After grouping , if you add any object inside that grouping area , then it will be automatically added to group.
+- To select a group , you should select atleast one object of the group. 
