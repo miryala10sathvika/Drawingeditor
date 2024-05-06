@@ -29,6 +29,7 @@ This is a basic drawing application built using Python's tkinter library. The ap
 - To Move: With objects selected, click the 'Move' button and then drag to reposition them.
 - To Group: Use the 'Group' button after making a selection to group objects together.
 - To Ungroup: Select a group and use the 'Ungroup' button to break it back into individual objects.
+- To UngroupAll: Select a group and use 'Ungroup All' button to recursively ungroup all the objects in the group.
 - To Copy/Paste: Select an object, click 'Copy', then 'Paste' to duplicate the object at a different location on the canvas.
 - To Edit Properties: Select an object and choose 'Edit' to change its properties.
 - To Save: Use the 'Save' option under the File menu to save your canvas.
