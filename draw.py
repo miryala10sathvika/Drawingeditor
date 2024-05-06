@@ -82,7 +82,7 @@ class DrawingApp:
         saveExport_menu.add_command(label="Save", command=self.save_file)
         saveExport_menu.add_command(label="Load file", command=self.load_file)
         saveExport_menu.add_command(label="Export", command=self.xmlExport)
-        menubar.add_cascade(label="Operations", menu=saveExport_menu)
+        menubar.add_cascade(label="File", menu=saveExport_menu)
 
     def create_toolbar(self):
         toolbar = tk.Frame(self.master, relief=tk.RAISED, bd=2)
@@ -234,18 +234,25 @@ class DrawingApp:
                 print(f"hai: {obj_id}")
         self.selection_rect = self.canvas.create_rectangle(self.start_x, self.start_y, x, y, outline="blue", dash=(4, 4))
         # Check if any group is present within the selection rectangle
+        objs_in_selection = self.canvas.find_overlapping(self.start_x, self.start_y, x, y)
         for i,group_coords in enumerate(self.groups):
             self.canvas.delete(str(i)+"view_rectangle")
-            if (group_coords[0] >= self.start_x and group_coords[1] >= self.start_y and
-                group_coords[2] <= x and group_coords[3] <= y):
-                # Draw a pink dashed rectangle around the group
+            # find objs in group
+            items_in_group = self.canvas.find_overlapping(group_coords[0], group_coords[1], group_coords[2], group_coords[3])
+            intersection = [value for value in items_in_group if value in objs_in_selection]
+            if len(intersection) > 0:
                 obj=self.canvas.create_rectangle(group_coords[0], group_coords[1], group_coords[2], group_coords[3], outline="pink", dash=(4, 4),tags=str(i)+"view_rectangle")
                 self.objlist.append(obj)
-            elif (group_coords[0] >= x and group_coords[1] >= y and
-                group_coords[2] <= self.start_x and group_coords[3] <= self.start_y):
-                # Draw a pink dashed rectangle around the group
-                obj=self.canvas.create_rectangle(group_coords[0], group_coords[1], group_coords[2], group_coords[3], outline="pink", dash=(4, 4),tags=str(i)+"view_rectangle")
-                self.objlist.append(obj)
+        # for i,group_coords in enumerate(self.groups):
+        #     if (group_coords[0] >= self.start_x and group_coords[1] >= self.start_y and
+        #         group_coords[2] <= x and group_coords[3] <= y):
+        #         # Draw a pink dashed rectangle around the group
+        #         obj=self.canvas.create_rectangle(group_coords[0], group_coords[1], group_coords[2], group_coords[3], outline="pink", dash=(4, 4),tags=str(i)+"view_rectangle")
+        #         self.objlist.append(obj)
+        #     elif (group_coords[0] >= x and group_coords[1] >= y and
+        #         group_coords[2] <= self.start_x and group_coords[3] <= self.start_y):
+        #         # Draw a pink dashed rectangle around the group
+                
 
 
     # def group_view_objects(self):
@@ -275,8 +282,25 @@ class DrawingApp:
             dx = event.x - self.start_x
             dy = event.y - self.start_y
             if dx != 0 or dy != 0:
+                move_list = []
                 for obj_id in self.selected_objects:
+                    # add condition to check for group. and then move the group also
+                    # iterate through list of groups and check if the object is present in the group
+                    for group_coords in self.groups:
+                        # find the obj_id in the group and move all of them
+                        items_in_group = self.canvas.find_overlapping(group_coords[0], group_coords[1], group_coords[2], group_coords[3])
+                        if obj_id in items_in_group:
+                            for groupobj_id in items_in_group:
+                                if groupobj_id not in self.selected_objects:
+                                    move_list.append(groupobj_id)
+                    move_list.append(obj_id)
+                self.selected_objects = move_list
+                for obj_id in move_list:
                     self.canvas.move(obj_id, dx - self.move_offset_x, dy - self.move_offset_y)
+                for obj_id in self.selected_objects:
+                    for group_coords in self.groups:
+                        if obj_id in items_in_group:
+                            self.groups[self.groups.index(group_coords)] = (group_coords[0] + dx - self.move_offset_x, group_coords[1] + dy - self.move_offset_y, group_coords[2] + dx - self.move_offset_x, group_coords[3] + dy - self.move_offset_y)
                 self.move_offset_x = dx
                 self.move_offset_y = dy
 
@@ -338,12 +362,31 @@ class DrawingApp:
 
     def delete_objects(self):
         for obj_id in self.selected_objects:
+            # add condition to check for group. and then move the group also
+            # iterate through list of groups and check if the object is present in the group
+            for group_coords in self.groups:
+                # find the obj_id in the group and move all of them
+                items_in_group = self.canvas.find_overlapping(group_coords[0], group_coords[1], group_coords[2], group_coords[3])
+                print("items_in_group",items_in_group)
+                if obj_id in items_in_group:
+                    for groupobj_id in items_in_group:
+                        if groupobj_id not in self.selected_objects:
+                            self.canvas.delete(groupobj_id)
             self.canvas.delete(obj_id)
+        # In case you just select a group and no objects in it (and what if that group has a group inside it)
         self.selected_objects = []
         self.canvas.delete(self.selection_rect)
 
     def copy_objects(self):
-        self.copied_objects = list(self.selected_objects)
+        selected_objs = self.selected_objects.copy()
+        for obj_id in self.selected_objects:
+            for group_coords in self.groups:
+                # find the obj_id in the group and move all of them
+                items_in_group = self.canvas.find_overlapping(group_coords[0], group_coords[1], group_coords[2], group_coords[3])
+                if obj_id in items_in_group:
+                    for groupobj_id in items_in_group:
+                        if groupobj_id not in self.selected_objects:
+                            selected_objs.append(groupobj_id)
         if self.selection_rect:
             print("i")
             self.canvas.delete(self.selection_rect)
@@ -372,6 +415,7 @@ class DrawingApp:
                 coords = self.canvas.coords(self.selection_rect)
                 self.groups.append(list(coords))
         self.canvas.delete(self.selection_rect)
+        print(self.groups)
 
     def print_object_coordinates(self):
         print("Object Details:")
@@ -462,7 +506,7 @@ class DrawingApp:
 
             print(f"Data written to '{file_path}' successfully.")
     
-
+    
     def edit_object_properties(self):
         if self.selected_objects:
             for obj_id in self.selected_objects:
