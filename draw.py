@@ -1,7 +1,6 @@
 import tkinter as tk
 import tkinter.simpledialog as sd
 import tkinter.messagebox as messagebox
-
 from tkinter import *
 import sys
 
@@ -116,8 +115,8 @@ class DrawingApp:
         group_button = tk.Button(toolbar, text="Group", command=self.group_objects)
         group_button.pack(side=tk.LEFT, padx=2, pady=2)
 
-        # group_button = tk.Button(toolbar, text="View Group", command=self.group_view_objects)
-        # group_button.pack(side=tk.LEFT, padx=2, pady=2)
+        save_button = tk.Button(toolbar, text="Save", command=self.save_file)
+        save_button.pack(side=tk.LEFT, padx=2, pady=2)
 
         ungroup_button = tk.Button(toolbar, text="UngroupAll", command=self.ungroupall_objects)
         ungroup_button.pack(side=tk.LEFT, padx=2, pady=2)
@@ -426,7 +425,12 @@ class DrawingApp:
         if self.selected_objects:
             if self.selection_rect !=None:
                 coords = self.canvas.coords(self.selection_rect)
-                self.groups.append(list(coords))
+                items_in_group = self.canvas.find_overlapping(coords[0], coords[1], coords[2], coords[3])
+                if len(list(items_in_group))>2:
+                    self.groups.append(list(coords))
+                    print(len(list(items_in_group)))
+                else:
+                    messagebox.showinfo("Single object is selected", "Please select an more than 1 object")
         self.canvas.delete(self.selection_rect)
         print(self.groups)
 
@@ -565,6 +569,16 @@ class DrawingApp:
     
     def edit_object_properties(self):
         if self.selected_objects:
+            coords = self.canvas.coords(self.selection_rect)
+                # Find the group(s) inside the selection box
+            objs_in_selection = self.canvas.find_overlapping(coords[0], coords[1], coords[2], coords[3])
+            for u,group_coords in enumerate(self.groups):
+                # find objs in group
+                items_in_group = self.canvas.find_overlapping(group_coords[0], group_coords[1], group_coords[2], group_coords[3])
+                intersection = [value for value in items_in_group if value in objs_in_selection]
+                if len(intersection) > 0:
+                    messagebox.showinfo("Group is Selected", "Please select an object without group to edit.")
+                    return
             for obj_id in self.selected_objects:
                 if obj_id == self.selection_rect:
                     continue
