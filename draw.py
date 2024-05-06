@@ -6,33 +6,9 @@ import sys
 
 class DrawingApp:
     @staticmethod
-    def round_rectangle(self,x1, y1, x2, y2, radius=25, **kwargs):
-            
-        points = [x1+radius, y1,
-                x1+radius, y1,
-                x2-radius, y1,
-                x2-radius, y1,
-                x2, y1,
-                x2, y1+radius,
-                x2, y1+radius,
-                x2, y2-radius,
-                x2, y2-radius,
-                x2, y2, # pos 19, 20     
-                x2-radius, y2,
-                x2-radius, y2,
-                x1+radius, y2,
-                x1+radius, y2,
-                x1, y2,
-                x1, y2-radius,
-                x1, y2-radius,
-                x1, y1+radius,
-                x1, y1+radius,
-                x1, y1]
-
-        return self.canvas.create_polygon(points, **kwargs, smooth=True)
     def __init__(self, master):
         self.master = master
-        self.master.title("Drawing Application")
+        self.master.title("Eaditor")
 
         self.canvas = tk.Canvas(self.master, width=800, height=800, bg="white")
         self.canvas.pack()
@@ -57,6 +33,33 @@ class DrawingApp:
         self.canvas.bind("<B1-Motion>", self.draw)
         self.canvas.bind("<ButtonRelease-1>", self.finish_drawing)
 
+    # Rectangle class
+    def round_rectangle(self,x1, y1, x2, y2, radius=25, **kwargs):
+            
+        points = [x1+radius, y1,
+                x1+radius, y1,
+                x2-radius, y1,
+                x2-radius, y1,
+                x2, y1,
+                x2, y1+radius,
+                x2, y1+radius,
+                x2, y2-radius,
+                x2, y2-radius,
+                x2, y2, # pos 19, 20     
+                x2-radius, y2,
+                x2-radius, y2,
+                x1+radius, y2,
+                x1+radius, y2,
+                x1, y2,
+                x1, y2-radius,
+                x1, y2-radius,
+                x1, y1+radius,
+                x1, y1+radius,
+                x1, y1]
+
+        return self.canvas.create_polygon(points, **kwargs, smooth=True)
+    
+    # Dashboard class
     def create_menu(self):
         menubar = tk.Menu(self.master)
         self.master.config(menu=menubar)
@@ -124,6 +127,20 @@ class DrawingApp:
         ungroup_button = tk.Button(toolbar, text="Ungroup", command=self.ungroup_objects)
         ungroup_button.pack(side=tk.LEFT, padx=2, pady=2)
 
+    # Group class
+    def group_objects(self):
+        if self.selected_objects:
+            if self.selection_rect !=None:
+                coords = self.canvas.coords(self.selection_rect)
+                items_in_group = self.canvas.find_overlapping(coords[0], coords[1], coords[2], coords[3])
+                if len(list(items_in_group))>2:
+                    self.groups.append(list(coords))
+                    print(len(list(items_in_group)))
+                else:
+                    messagebox.showinfo("Single object is selected", "Please select an more than 1 object")
+        self.canvas.delete(self.selection_rect)
+        print(self.groups)
+        
     def ungroupall_objects(self):
         if self.selected_objects:
             if self.selection_rect != None:
@@ -150,6 +167,7 @@ class DrawingApp:
             self.selection_rect = None
             for obj_id in self.objlist:
                     self.canvas.delete(obj_id)
+                    
     def ungroup_objects(self):
         if self.selected_objects:
             if self.selection_rect:
@@ -189,96 +207,8 @@ class DrawingApp:
             self.selection_rect = None
             for obj_id in self.objlist:
                     self.canvas.delete(obj_id)
-
-
-    def toggle_move_mode(self):
-        self.move_mode = True
-        if self.move_mode:
-            self.canvas.bind("<Button-1>", self.start_move)
-            self.canvas.bind("<B1-Motion>", self.move_objects)
-            self.canvas.bind("<ButtonRelease-1>", self.end_move)
-        else:
-            self.canvas.unbind("<Button-1>")
-            self.canvas.unbind("<B1-Motion>")
-            self.canvas.unbind("<ButtonRelease-1>")
-            if self.selection_rect:
-                self.canvas.delete(self.selection_rect)
-            self.selection_rect = None
-
-    def toggle_select_mode(self):
-        self.select_mode = True
-        if self.selection_rect:
-            self.canvas.delete(self.selection_rect)
-            self.selection_rect = None
-            for obj_id in self.objlist:
-                    self.canvas.delete(obj_id)
-                    print(f"hai: {obj_id}")
-        if self.select_mode:
-            self.selected_objects = []  # Clear selected objects list
-            self.selection_rect = None
-            self.canvas.bind("<Button-1>", self.start_selection)
-            self.canvas.bind("<B1-Motion>", self.draw_selection_rectangle)
-            self.canvas.bind("<ButtonRelease-1>", self.end_selection)
-        else:
-            self.canvas.unbind("<Button-1>")
-            self.canvas.unbind("<B1-Motion>")
-            self.canvas.unbind("<ButtonRelease-1>")
-            if self.selection_rect:
-                self.canvas.delete(self.selection_rect)
-                self.selection_rect = None
-        print(self.selected_objects)
-                
-
-    def start_selection(self, event):
-        self.start_x = event.x
-        self.start_y = event.y
-
-    def draw_selection_rectangle(self, event):
-        self.objlist=[]
-        x, y = event.x, event.y
-        if self.selection_rect:
-            self.canvas.delete(self.selection_rect)
-            for obj_id in self.objlist:
-                self.canvas.delete(obj_id)
-                print(f"hai: {obj_id}")
-        self.selection_rect = self.canvas.create_rectangle(self.start_x, self.start_y, x, y, outline="blue", dash=(4, 4))
-        # Check if any group is present within the selection rectangle
-        objs_in_selection = self.canvas.find_overlapping(self.start_x, self.start_y, x, y)
-        for i,group_coords in enumerate(self.groups):
-            self.canvas.delete(str(i)+"view_rectangle")
-            # find objs in group
-            items_in_group = self.canvas.find_overlapping(group_coords[0], group_coords[1], group_coords[2], group_coords[3])
-            intersection = [value for value in items_in_group if value in objs_in_selection]
-            if len(intersection) > 0:
-                obj=self.canvas.create_rectangle(group_coords[0], group_coords[1], group_coords[2], group_coords[3], outline="pink", dash=(4, 4),tags=str(i)+"view_rectangle")
-                self.objlist.append(obj)
-        # for i,group_coords in enumerate(self.groups):
-        #     if (group_coords[0] >= self.start_x and group_coords[1] >= self.start_y and
-        #         group_coords[2] <= x and group_coords[3] <= y):
-        #         # Draw a pink dashed rectangle around the group
-        #         obj=self.canvas.create_rectangle(group_coords[0], group_coords[1], group_coords[2], group_coords[3], outline="pink", dash=(4, 4),tags=str(i)+"view_rectangle")
-        #         self.objlist.append(obj)
-        #     elif (group_coords[0] >= x and group_coords[1] >= y and
-        #         group_coords[2] <= self.start_x and group_coords[3] <= self.start_y):
-        #         # Draw a pink dashed rectangle around the group
-                
-
-
-    # def group_view_objects(self):
-    #     for group_coords in self.groups:
-    #         obj=self.canvas.create_rectangle(group_coords[0], group_coords[1], group_coords[2], group_coords[3], outline="pink", dash=(4, 4))
-
-
-    def end_selection(self, event):
-        x, y = event.x, event.y
-        items_in_selection = self.canvas.find_overlapping(self.start_x, self.start_y, x, y)
-        self.selected_objects = list(items_in_selection)
-        self.canvas.bind("<Button-1>", self.start_drawing)
-        self.canvas.bind("<B1-Motion>", self.draw)
-        self.canvas.bind("<ButtonRelease-1>", self.finish_drawing)
-        self.select_mode = False
         
-
+    #  Move class
     def start_move(self, event):
         if self.selected_objects:
             self.start_x = event.x
@@ -325,6 +255,7 @@ class DrawingApp:
         self.canvas.bind("<ButtonRelease-1>", self.finish_drawing)
         self.move_mode = False
 
+    # Select class
     def select_line(self):
         if self.selection_rect:
             self.canvas.delete(self.selection_rect)
@@ -339,6 +270,40 @@ class DrawingApp:
         self.selected_objects = []  # Clear selected objects list
         self.selected_objects.append("rectangle")
 
+    def draw_selection_rectangle(self, event):
+        self.objlist=[]
+        x, y = event.x, event.y
+        if self.selection_rect:
+            self.canvas.delete(self.selection_rect)
+            for obj_id in self.objlist:
+                self.canvas.delete(obj_id)
+                print(f"hai: {obj_id}")
+        self.selection_rect = self.canvas.create_rectangle(self.start_x, self.start_y, x, y, outline="blue", dash=(4, 4))
+        # Check if any group is present within the selection rectangle
+        objs_in_selection = self.canvas.find_overlapping(self.start_x, self.start_y, x, y)
+        for i,group_coords in enumerate(self.groups):
+            self.canvas.delete(str(i)+"view_rectangle")
+            # find objs in group
+            items_in_group = self.canvas.find_overlapping(group_coords[0], group_coords[1], group_coords[2], group_coords[3])
+            intersection = [value for value in items_in_group if value in objs_in_selection]
+            if len(intersection) > 0:
+                obj=self.canvas.create_rectangle(group_coords[0], group_coords[1], group_coords[2], group_coords[3], outline="pink", dash=(4, 4),tags=str(i)+"view_rectangle")
+                self.objlist.append(obj)
+
+    def start_selection(self, event):
+        self.start_x = event.x
+        self.start_y = event.y
+
+    def end_selection(self, event):
+        x, y = event.x, event.y
+        items_in_selection = self.canvas.find_overlapping(self.start_x, self.start_y, x, y)
+        self.selected_objects = list(items_in_selection)
+        self.canvas.bind("<Button-1>", self.start_drawing)
+        self.canvas.bind("<B1-Motion>", self.draw)
+        self.canvas.bind("<ButtonRelease-1>", self.finish_drawing)
+        self.select_mode = False
+        
+    # Draw class    
     def start_drawing(self, event):
         if not self.select_mode:
             self.start_x = event.x
@@ -352,7 +317,6 @@ class DrawingApp:
             self.canvas.delete("temp_rectangle")
             self.canvas.create_rectangle(self.start_x, self.start_y, event.x, event.y, outline="black", tags="temp_rectangle")
             
-
     def finish_drawing(self, event):
         if "line" in self.selected_objects:
             self.canvas.create_line(self.start_x, self.start_y, event.x, event.y)
@@ -372,6 +336,7 @@ class DrawingApp:
                 self.canvas.type(obj_id) == self.canvas.type(int(obj_id) + 1)):
                 self.canvas.delete(obj_id)
 
+    # Toolbar class
     def delete_objects(self):
         for obj_id in self.selected_objects:
             # add condition to check for group. and then move the group also
@@ -421,19 +386,86 @@ class DrawingApp:
                 elif self.canvas.type(obj_id) == "rectangle":
                     new_obj_id = self.canvas.create_rectangle(x1 + dx, y1 + dy, x2 + dx, y2 + dy, outline="black")
 
-    def group_objects(self):
-        if self.selected_objects:
-            if self.selection_rect !=None:
-                coords = self.canvas.coords(self.selection_rect)
-                items_in_group = self.canvas.find_overlapping(coords[0], coords[1], coords[2], coords[3])
-                if len(list(items_in_group))>2:
-                    self.groups.append(list(coords))
-                    print(len(list(items_in_group)))
-                else:
-                    messagebox.showinfo("Single object is selected", "Please select an more than 1 object")
-        self.canvas.delete(self.selection_rect)
-        print(self.groups)
+    def toggle_move_mode(self):
+        self.move_mode = True
+        if self.move_mode:
+            self.canvas.bind("<Button-1>", self.start_move)
+            self.canvas.bind("<B1-Motion>", self.move_objects)
+            self.canvas.bind("<ButtonRelease-1>", self.end_move)
+        else:
+            self.canvas.unbind("<Button-1>")
+            self.canvas.unbind("<B1-Motion>")
+            self.canvas.unbind("<ButtonRelease-1>")
+            if self.selection_rect:
+                self.canvas.delete(self.selection_rect)
+            self.selection_rect = None
 
+    def toggle_select_mode(self):
+        self.select_mode = True
+        if self.selection_rect:
+            self.canvas.delete(self.selection_rect)
+            self.selection_rect = None
+            for obj_id in self.objlist:
+                    self.canvas.delete(obj_id)
+                    print(f"hai: {obj_id}")
+        if self.select_mode:
+            self.selected_objects = []  # Clear selected objects list
+            self.selection_rect = None
+            self.canvas.bind("<Button-1>", self.start_selection)
+            self.canvas.bind("<B1-Motion>", self.draw_selection_rectangle)
+            self.canvas.bind("<ButtonRelease-1>", self.end_selection)
+        else:
+            self.canvas.unbind("<Button-1>")
+            self.canvas.unbind("<B1-Motion>")
+            self.canvas.unbind("<ButtonRelease-1>")
+            if self.selection_rect:
+                self.canvas.delete(self.selection_rect)
+                self.selection_rect = None
+        print(self.selected_objects)
+
+    def edit_object_properties(self):
+        if self.selected_objects:
+            coords = self.canvas.coords(self.selection_rect)
+                # Find the group(s) inside the selection box
+            objs_in_selection = self.canvas.find_overlapping(coords[0], coords[1], coords[2], coords[3])
+            for u,group_coords in enumerate(self.groups):
+                # find objs in group
+                items_in_group = self.canvas.find_overlapping(group_coords[0], group_coords[1], group_coords[2], group_coords[3])
+                intersection = [value for value in items_in_group if value in objs_in_selection]
+                if len(intersection) > 0:
+                    messagebox.showinfo("Group is Selected", "Please select an object without group to edit.")
+                    return
+            for obj_id in self.selected_objects:
+                if obj_id == self.selection_rect:
+                    continue
+                obj_type = self.canvas.type(obj_id)
+                if obj_type == "line":
+                    new_color = sd.askstring("Change Color", "Enter Line color (black, red, green, or blue):", initialvalue="black")
+                    if new_color in ["black", "red", "green", "blue"]:
+                        self.canvas.itemconfig(obj_id, fill=new_color)
+                elif obj_type == "rectangle":
+                    new_color = sd.askstring("Change Color", "Enter Rectangle color (black, red, green, or blue):", initialvalue="black")
+                    if new_color in ["black", "red", "green", "blue"]:
+                        self.canvas.itemconfig(obj_id, outline=new_color)
+
+                    rounded_edges = sd.askstring("Rounded Edges", "Do you want rounded edges? (yes or no):", initialvalue="no")
+                    if rounded_edges.lower() == "yes":
+                        coords = self.canvas.coords(obj_id)
+                        self.canvas.delete(obj_id)
+                        self.selected_objects.remove(obj_id)  # Remove the old object ID
+                        self.rectangle_type.pop(f'{obj_id}')
+                        print(self.rectangle_type)
+                        new_rectangle = self.round_rectangle(self,coords[0], coords[1], coords[2], coords[3], radius=25, outline=new_color, fill="")
+                        self.rectangle_type[str(self.canvas.find_all()[-1])] = "rounded"
+                        print(self.rectangle_type)
+                        #self.selected_objects.append(new_rectangle)  # Add the new object ID
+                
+            self.canvas.delete(self.selection_rect)
+            self.selection_rect = None
+        else:
+            messagebox.showinfo("No Object Selected", "Please select an object to edit.")
+
+    # Objects class
     def print_object_coordinates(self):
         print("Object Details:")
         for obj_id in self.canvas.find_all():
@@ -444,6 +476,7 @@ class DrawingApp:
                 self.canvas.delete(obj_id)
                 print(f"hai: {obj_id}")
     
+    # File class
     def save_file(self):
         # Define the file path where you want to store the data
         file_name = sd.askstring("Enter File Name", "Enter the file name (without extension):")
@@ -513,9 +546,14 @@ class DrawingApp:
                     for line in file:
                         data = line.split(" ")
                         if data[0] == 'line':
-                            self.canvas.create_line(data[1], data[2], data[3], data[4])
+                            self.canvas.create_line(data[1], data[2], data[3], data[4], fill=data[5])
                         elif data[0] == 'rect':
-                            self.canvas.create_rectangle(data[1], data[2], data[3], data[4])
+                            if data[6] == "rounded":
+                                new_rectangle = self.round_rectangle(data[0], data[1], data[2], data[3], radius=25, outline=data[5])
+                                self.rectangle_type[str(self.canvas.find_all()[-1])] = "rounded"
+                            elif data[6] == "square":
+                                self.canvas.create_rectangle(data[1], data[2], data[3], data[4], outline=data[5])
+                                self.rectangle_type[str(self.canvas.find_all()[-1])] = "square"
 
                 print(f"Data loaded from '{file_path}' successfully.")
         else:
@@ -546,6 +584,7 @@ class DrawingApp:
                         file.write(indents + f"\t\t<x>{coordinates[2]}</x>\n")
                         file.write(indents + f"\t\t<y>{coordinates[3]}</y>\n")
                         file.write(indents + "\t</end>\n")
+                        file.write(indents + f"\t<color>{ self.canvas.itemcget(obj_id, "fill") }</color>\n")
                         file.write(indents + "</line>\n")
                         indents = ''
                         
@@ -561,53 +600,28 @@ class DrawingApp:
                         file.write(indents + f"\t\t<x>{coordinates[2]}</x>\n")
                         file.write(indents + f"\t\t<y>{coordinates[3]}</y>\n")
                         file.write(indents + "\t</lower-right>\n")
+                        file.write(indents + f"\t<color>{ self.canvas.itemcget(obj_id, "outline") }</color>\n")
+                        file.write(indents + "\t<corner>square</corner>\n")
+                        file.write(indents + "</rectangle>\n")
+                        indents = ''
+                    elif obj_type == 'polygon':
+                        for _ in range(num_indents):
+                            indents += '\t'
+                        file.write(indents + "<rectangle>\n")
+                        file.write(indents + "\t<upper-left>\n")
+                        file.write(indents + f"\t\t<x>{coordinates[0]}</x>\n")
+                        file.write(indents + f"\t\t<y>{coordinates[1]}</y>\n")
+                        file.write(indents + "\t</upper-left>\n")
+                        file.write(indents + "\t<lower-right>\n")
+                        file.write(indents + f"\t\t<x>{coordinates[2]}</x>\n")
+                        file.write(indents + f"\t\t<y>{coordinates[3]}</y>\n")
+                        file.write(indents + "\t</lower-right>\n")
+                        file.write(indents + f"\t<color>{ self.canvas.itemcget(obj_id, "outline") }</color>\n")
+                        file.write(indents + "\t<corner>rounded</corner>\n")
                         file.write(indents + "</rectangle>\n")
                         indents = ''
 
             print(f"Data written to '{file_path}' successfully.")
-    
-    
-    def edit_object_properties(self):
-        if self.selected_objects:
-            coords = self.canvas.coords(self.selection_rect)
-                # Find the group(s) inside the selection box
-            objs_in_selection = self.canvas.find_overlapping(coords[0], coords[1], coords[2], coords[3])
-            for u,group_coords in enumerate(self.groups):
-                # find objs in group
-                items_in_group = self.canvas.find_overlapping(group_coords[0], group_coords[1], group_coords[2], group_coords[3])
-                intersection = [value for value in items_in_group if value in objs_in_selection]
-                if len(intersection) > 0:
-                    messagebox.showinfo("Group is Selected", "Please select an object without group to edit.")
-                    return
-            for obj_id in self.selected_objects:
-                if obj_id == self.selection_rect:
-                    continue
-                obj_type = self.canvas.type(obj_id)
-                if obj_type == "line":
-                    new_color = sd.askstring("Change Color", "Enter Line color (black, red, green, or blue):", initialvalue="black")
-                    if new_color in ["black", "red", "green", "blue"]:
-                        self.canvas.itemconfig(obj_id, fill=new_color)
-                elif obj_type == "rectangle":
-                    new_color = sd.askstring("Change Color", "Enter Rectangle color (black, red, green, or blue):", initialvalue="black")
-                    if new_color in ["black", "red", "green", "blue"]:
-                        self.canvas.itemconfig(obj_id, outline=new_color)
-
-                    rounded_edges = sd.askstring("Rounded Edges", "Do you want rounded edges? (yes or no):", initialvalue="no")
-                    if rounded_edges.lower() == "yes":
-                        coords = self.canvas.coords(obj_id)
-                        self.canvas.delete(obj_id)
-                        self.selected_objects.remove(obj_id)  # Remove the old object ID
-                        self.rectangle_type.pop(f'{obj_id}')
-                        print(self.rectangle_type)
-                        new_rectangle = self.round_rectangle(self,coords[0], coords[1], coords[2], coords[3], radius=25, outline=new_color, fill="")
-                        self.rectangle_type[str(self.canvas.find_all()[-1])] = "rounded"
-                        print(self.rectangle_type)
-                        #self.selected_objects.append(new_rectangle)  # Add the new object ID
-                
-            self.canvas.delete(self.selection_rect)
-            self.selection_rect = None
-        else:
-            messagebox.showinfo("No Object Selected", "Please select an object to edit.")
 
 if __name__ == "__main__":
     file_name = None
