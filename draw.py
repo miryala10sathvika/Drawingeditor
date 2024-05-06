@@ -5,7 +5,6 @@ from tkinter import *
 import sys
 
 class DrawingApp:
-    @staticmethod
     def __init__(self, master):
         self.master = master
         self.master.title("Eaditor")
@@ -29,10 +28,11 @@ class DrawingApp:
         self.create_menu()
         self.create_toolbar()
         self.objlist=[]
+        self.selected_objs=[]
         self.canvas.bind("<Button-1>", self.start_drawing)
         self.canvas.bind("<B1-Motion>", self.draw)
         self.canvas.bind("<ButtonRelease-1>", self.finish_drawing)
-
+    @staticmethod
     # Rectangle class
     def round_rectangle(self,x1, y1, x2, y2, radius=25, **kwargs):
             
@@ -355,28 +355,32 @@ class DrawingApp:
         self.canvas.delete(self.selection_rect)
 
     def copy_objects(self):
-        selected_objs = self.selected_objects.copy()
+        self.selected_objs = self.selected_objects.copy()
+        if self.selection_rect in self.selected_objs:
+            self.selected_objs.remove(self.selection_rect)
         for obj_id in self.selected_objects:
             for group_coords in self.groups:
                 # find the obj_id in the group and move all of them
                 items_in_group = self.canvas.find_overlapping(group_coords[0], group_coords[1], group_coords[2], group_coords[3])
                 if obj_id in items_in_group:
                     for groupobj_id in items_in_group:
-                        if groupobj_id not in self.selected_objects:
-                            selected_objs.append(groupobj_id)
+                        if groupobj_id not in self.selected_objects and groupobj_id!=self.selection_rect:
+                            self.selected_objs.append(groupobj_id)
+        print(self.selected_objs)
         if self.selection_rect:
             print("i")
             self.canvas.delete(self.selection_rect)
             self.selection_rect = None
 
     def paste_objects(self):
-        if self.copied_objects:
+        print(self.selected_objs)
+        if self.selected_objs:
             # Calculate offset based on mouse position
             mouse_x = self.canvas.winfo_pointerx() - self.canvas.winfo_rootx()
             mouse_y = self.canvas.winfo_pointery() - self.canvas.winfo_rooty()
             dx = mouse_x - self.start_x
             dy = mouse_y - self.start_y
-            for obj_id in self.copied_objects:
+            for obj_id in self.selected_objs:
                 # Get original coordinates of copied object
                 x1, y1, x2, y2 = self.canvas.coords(obj_id)
                 # Create copy at new position
@@ -584,7 +588,7 @@ class DrawingApp:
                         file.write(indents + f"\t\t<x>{coordinates[2]}</x>\n")
                         file.write(indents + f"\t\t<y>{coordinates[3]}</y>\n")
                         file.write(indents + "\t</end>\n")
-                        file.write(indents + f"\t<color>{ self.canvas.itemcget(obj_id, "fill") }</color>\n")
+                        file.write(indents + f"\t<color>{self.canvas.itemcget(obj_id, 'fill')}</color>\n")
                         file.write(indents + "</line>\n")
                         indents = ''
                         
@@ -600,7 +604,7 @@ class DrawingApp:
                         file.write(indents + f"\t\t<x>{coordinates[2]}</x>\n")
                         file.write(indents + f"\t\t<y>{coordinates[3]}</y>\n")
                         file.write(indents + "\t</lower-right>\n")
-                        file.write(indents + f"\t<color>{ self.canvas.itemcget(obj_id, "outline") }</color>\n")
+                        file.write(indents + f"\t<color>{self.canvas.itemcget(obj_id, 'outline')}</color>\n")
                         file.write(indents + "\t<corner>square</corner>\n")
                         file.write(indents + "</rectangle>\n")
                         indents = ''
@@ -616,7 +620,7 @@ class DrawingApp:
                         file.write(indents + f"\t\t<x>{coordinates[2]}</x>\n")
                         file.write(indents + f"\t\t<y>{coordinates[3]}</y>\n")
                         file.write(indents + "\t</lower-right>\n")
-                        file.write(indents + f"\t<color>{ self.canvas.itemcget(obj_id, "outline") }</color>\n")
+                        file.write(indents + f"\t<color>{self.canvas.itemcget(obj_id, 'outline')}</color>\n")
                         file.write(indents + "\t<corner>rounded</corner>\n")
                         file.write(indents + "</rectangle>\n")
                         indents = ''

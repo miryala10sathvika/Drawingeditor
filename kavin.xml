@@ -1,0 +1,23 @@
+<line>
+	<begin>
+		<x>130.0</x>
+		<y>294.0</y>
+	</begin>
+	<end>
+		<x>614.0</x>
+		<y>319.0</y>
+	</end>
+	<color>red</color>
+</line>
+<rectangle>
+	<upper-left>
+		<x>367.0</x>
+		<y>258.0</y>
+	</upper-left>
+	<lower-right>
+		<x>367.0</x>
+		<y>258.0</y>
+	</lower-right>
+	<color>blue</color>
+	<corner>rounded</corner>
+</rectangle>
