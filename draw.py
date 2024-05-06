@@ -130,11 +130,18 @@ class DrawingApp:
                 coords = self.canvas.coords(self.selection_rect)
                 # Find the group(s) inside the selection box
                 groups_to_remove = []
-                for i, group_coords in enumerate(self.groups):
-                    if (group_coords[0] >= coords[0] and group_coords[1] >= coords[1] and
-                        group_coords[2] <= coords[2] and group_coords[3] <= coords[3]):
+                # for i, group_coords in enumerate(self.groups):
+                #     if (group_coords[0] >= coords[0] and group_coords[1] >= coords[1] and
+                #         group_coords[2] <= coords[2] and group_coords[3] <= coords[3]):
+                #         groups_to_remove.append(i)
+        # Check if any group is present within the selection rectangle
+                objs_in_selection = self.canvas.find_overlapping(coords[0], coords[1], coords[2], coords[3])
+                for i,group_coords in enumerate(self.groups):
+                    # find objs in group
+                    items_in_group = self.canvas.find_overlapping(group_coords[0], group_coords[1], group_coords[2], group_coords[3])
+                    intersection = [value for value in items_in_group if value in objs_in_selection]
+                    if len(intersection) > 0:
                         groups_to_remove.append(i)
-
                 # Remove the identified group(s) from self.groups
                 for index in sorted(groups_to_remove, reverse=True):
                     del self.groups[index]
@@ -149,11 +156,13 @@ class DrawingApp:
                 coords = self.canvas.coords(self.selection_rect)
                 # Find the group(s) inside the selection box
                 groups_to_remove = []
-                for u, group_coords in enumerate(self.groups):
-                    if (group_coords[0] >= coords[0] and group_coords[1] >= coords[1] and
-                        group_coords[2] <= coords[2] and group_coords[3] <= coords[3]):
+                objs_in_selection = self.canvas.find_overlapping(coords[0], coords[1], coords[2], coords[3])
+                for u,group_coords in enumerate(self.groups):
+                    # find objs in group
+                    items_in_group = self.canvas.find_overlapping(group_coords[0], group_coords[1], group_coords[2], group_coords[3])
+                    intersection = [value for value in items_in_group if value in objs_in_selection]
+                    if len(intersection) > 0:
                         groups_to_remove.append(u)
-                        print("ki",u)
                 # Iterate through all possible non-intersecting super groups
                 for i in range(len(groups_to_remove)):
                     for j in range(len(groups_to_remove)):
